@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite the paper and this repository."
+title: "Numerical experiments for an optimal quadrature formula with derivative in W_2^(3,2)"
+authors:
+  - family-names: Hayotov
+    given-names: Abdullo R.
+  - family-names: Polvonov
+    given-names: Sarvarbek Z.
+year: 2026
+license: MIT
