@@ -18,6 +18,7 @@ in the Hilbert space with the norm $\|\varphi\|^2=\int_0^1(\varphi'''+\sigma\var
 | `code/sigma_tahlil.py` | Direct solution of the linear system (5.1)–(5.3), norm of the error functional |
 | `code/paper_numerics.py` | Regenerates every table (`tables/*.tex`, Tables 1–8) and figure (`figures/*.pdf`, Figures 1–4) of the paper, about 15 s |
 | `code/verify_paper.py` | Independent high-precision check (40–60 digits) of every formula of the paper against the direct solution of the system, about 40 s |
+| `code/taqqoslash.py` | Compares the optimal formula with the trapezoidal, Simpson, Euler–Maclaurin and fitted Euler–Maclaurin rules (optionally Gauss–Legendre) on **any integrand you type in**: errors, observed orders, check of Theorem 7, CSV table and plots |
 | `tables/`, `figures/` | Output of `paper_numerics.py`, as used in the paper |
 
 ## Usage
@@ -40,6 +41,26 @@ C1 = K.C1_sodda(sigma, N)        # optimal derivative weights C_{beta,1}, Theore
 F  = K.Funksiya("log(1+x)")      # integrand with exact integral and sigma*
 print(mp.nstr(F["I"] - K.optimal(F, N, F["sigma_nazariy"]), 5))   # error with sigma = sigma*
 ```
+
+### Your own integrand
+
+```bash
+cd code
+python taqqoslash.py "exp(-x)*cos(3*x)"                 # sigma = sigma* chosen automatically
+python taqqoslash.py "log(1+x)" --sigma 1 --N 4 8 16 32 64 128
+python taqqoslash.py "1/(1+25*x**2)" --oraliq -1 1 --gauss
+python taqqoslash.py                                    # asks for f(x)
+```
+
+The script prints a table of errors |R_N| with observed orders for every method, the
+parameters sigma* = -[f''']/[f''] and sigma_E^2 = [f''']/[f'], and a check of Theorem 7
+(720 N^4 R_N -> [f''' + sigma f'']_0^1, or the h^5 term when sigma = sigma*). It writes
+`natijalar/<function>/xatoliklar.csv` and a four-panel figure `taqqoslash.png` / `.pdf`:
+the integrand and its derivative, convergence of all methods, the error as a function of
+sigma, and the optimal coefficients C_{beta,1}. Run `python taqqoslash.py -h` for all options.
+The integrand is parsed with sympy (`exp, log, sin, cos, sqrt, sinh, cosh, atan, erf, pi, ...`,
+powers with `**`); f and f' must be finite at the end points. On an interval [a, b] the
+substitution x = a + (b - a) t is used, and sigma refers to the variable t.
 
 All computations use `mpmath` with at least 40 significant digits; results do not depend on the platform.
 
