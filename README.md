@@ -18,7 +18,7 @@ in the Hilbert space with the norm $\|\varphi\|^2=\int_0^1(\varphi'''+\sigma\var
 | `code/sigma_tahlil.py` | Direct solution of the linear system (5.1)–(5.3), norm of the error functional |
 | `code/paper_numerics.py` | Regenerates every table (`tables/*.tex`, Tables 1–8) and figure (`figures/*.pdf`, Figures 1–4) of the paper, about 15 s |
 | `code/verify_paper.py` | Independent high-precision check (40–60 digits) of every formula of the paper against the direct solution of the system, about 40 s |
-| `code/taqqoslash.py` | Compares the optimal formula with the trapezoidal, Simpson, Euler–Maclaurin and fitted Euler–Maclaurin rules (optionally Gauss–Legendre) on **any integrand you type in**: errors, observed orders, check of Theorem 7, CSV table and plots |
+| `code/taqqoslash.py` | Compares the optimal formula with the trapezoidal, Simpson, Euler–Maclaurin and fitted Euler–Maclaurin rules (optionally Gauss–Legendre) on **any integrand you type in**: errors, observed orders, check of Theorem 7, CSV table, plots and an automatic conclusion |
 | `tables/`, `figures/` | Output of `paper_numerics.py`, as used in the paper |
 
 ## Usage
@@ -54,7 +54,11 @@ python taqqoslash.py                                    # asks for f(x)
 
 The script prints a table of errors |R_N| with observed orders for every method, the
 parameters sigma* = -[f''']/[f''] and sigma_E^2 = [f''']/[f'], and a check of Theorem 7
-(720 N^4 R_N -> [f''' + sigma f'']_0^1, or the h^5 term when sigma = sigma*). It writes
+(720 N^4 R_N -> [f''' + sigma f'']_0^1, or the h^5 term when sigma = sigma*). It ends with a **conclusion** (also saved as `xulosa.txt`): a ranking of the methods, which rule
+integrates f exactly (Theorem 5, Proposition 2), whether the observed orders match the theory
+(a drop signals insufficient smoothness), whether the optimal formula suits this integrand and,
+if not, why (no sigma*, too large sigma*, singular f''/f''' at an end point, no gain over
+Euler-Maclaurin), and why the winning method wins. It writes
 `natijalar/<function>/xatoliklar.csv` and a four-panel figure `taqqoslash.png` / `.pdf`:
 the integrand and its derivative, convergence of all methods, the error as a function of
 sigma, and the optimal coefficients C_{beta,1}. Run `python taqqoslash.py -h` for all options.
