@@ -10,6 +10,20 @@ $$\int_0^1 \varphi(x)\,dx \cong \sum_{\beta=0}^{N} C_{\beta,0}\,\varphi(h\beta) 
 
 in the Hilbert space with the norm $\|\varphi\|^2=\int_0^1(\varphi'''+\sigma\varphi'')^2dx$. The weights $C_{\beta,0}$ are those of the trapezoidal rule; the derivative weights $C_{\beta,1}$ are optimal in the sense of Sard and are given in closed form.
 
+## Online calculator
+
+**https://sarvarbek-zafar.github.io/w32-optimal-quadrature/**
+
+A web page for non-specialists (in Uzbek): type any integrand f(x), see it typeset as a formula,
+and get the exact integral, the errors of the trapezoidal, Simpson, Euler–Maclaurin, fitted
+Euler–Maclaurin and optimal rules for N = 4, 8, …, convergence orders, four plots and a plain-language
+conclusion (which rule wins and why, and whether the optimal formula suits this integrand).
+
+The page lives in `docs/` (`index.html`, `kvadratura.js` with the formulas of Theorem 4, `app.js`
+with the interface) and runs entirely in the browser in double precision; errors below about
+1e-14 are shown as ≈ 0. For 40-digit results use `code/taqqoslash.py`. The JavaScript coefficients
+agree with the Python implementation to about 2e-15.
+
 ## Contents
 
 | Path | Contents |
@@ -20,6 +34,7 @@ in the Hilbert space with the norm $\|\varphi\|^2=\int_0^1(\varphi'''+\sigma\var
 | `code/verify_paper.py` | Independent high-precision check (40–60 digits) of every formula of the paper against the direct solution of the system, about 40 s |
 | `code/taqqoslash.py` | Compares the optimal formula with the trapezoidal, Simpson, Euler–Maclaurin and fitted Euler–Maclaurin rules (optionally Gauss–Legendre) on **any integrand you type in**: errors, observed orders, check of Theorem 7, CSV table, plots and an automatic conclusion |
 | `tables/`, `figures/` | Output of `paper_numerics.py`, as used in the paper |
+| `docs/` | Online calculator (GitHub Pages): `index.html`, `kvadratura.js`, `app.js` |
 
 ## Usage
 
