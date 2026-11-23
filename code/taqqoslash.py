@@ -5,11 +5,11 @@ Istalgan funksiya uchun optimal kvadratura formulasini klassik formulalar bilan 
 Foydalanuvchi integral ostidagi funksiyani matn ko'rinishida kiritadi; skript
 
   * aniq integralni (sympy, bo'lmasa yuqori aniqlikdagi mpmath.quad) hisoblaydi;
-  * sigma* = -[f''']/[f''] (Teorema 7 dagi h^4 hadini yo'qotadi) va
+  * sigma* = -[f''']/[f''] (maqoladagi (11.4) formula; 2-gipotezadagi h^4 hadini yo'qotadi) va
     sigma_E^2 = [f''']/[f'] (moslangan Euler--Maclaurin uchun) ni topadi;
   * trapetsiya, Simpson, Euler--Maclaurin, optimal formula, moslangan Euler--Maclaurin
     (va ixtiyoriy Gauss--Lejandr) xatoliklarini va yaqinlashish tartiblarini hisoblaydi;
-  * Teorema 7 bosh hadini tekshiradi: 720 N^4 R_N  ->  [f''' + sigma f'']_0^1;
+  * xatoning bosh hadini (maqoladagi 2-gipoteza, (11.3)) tekshiradi: 720 N^4 R_N  ->  [f''' + sigma f'']_0^1;
   * natijalarni jadval (ekranga va CSV) hamda grafiklar (PNG va PDF) ko'rinishida saqlaydi;
   * xulosa beradi: qaysi usul eng yaxshi va nima uchun, optimal formula bu funksiyaga
     mos keladimi, mos kelmasa -- sababi (sigma* yo'qligi, katta sigma*, silliqlik yetishmasligi).
@@ -68,7 +68,7 @@ def tayyorla(matn, a, b, aniq=None):
     F["a"], F["b"] = mp.mpf(sp.N(a, 30)), mp.mpf(sp.N(b, 30))
     if aniq is not None:
         F["I"] = mp.mpf(aniq)
-    # Teorema 7 uchun f'' va f''' (t o'zgaruvchida)
+    # 2-gipoteza (bosh had) uchun f'' va f''' (t o'zgaruvchida)
     F["d2"] = sp.lambdify(K.x, sp.diff(et, K.x, 2), "mpmath")
     F["d3"] = sp.lambdify(K.x, sp.diff(et, K.x, 3), "mpmath")
     return F
@@ -160,10 +160,10 @@ def teorema7(F, Nlar, jad, sigma):
     print()
     if all(abs(R) < NOL for R in jad["Optimal"]):
         print()
-        print("  Teorema 7 tekshiruvi: optimal formula bu funksiyani aniq integrallaydi (f''' + sigma f'' = 0).")
+        print("  Bosh had tekshiruvi (2-gipoteza): optimal formula bu funksiyani aniq integrallaydi (f''' + sigma f'' = 0).")
         return bosh
     nol = abs(bosh) < mp.mpf(10)**-12 * max(1, abs(L(0)))
-    print(f"  Teorema 7 tekshiruvi: 720 N^4 R_N -> [f'''+sigma f'']_0^1 = {'0' if nol else mp.nstr(bosh, 8)}")
+    print(f"  Bosh had tekshiruvi (2-gipoteza): 720 N^4 R_N -> [f'''+sigma f'']_0^1 = {'0' if nol else mp.nstr(bosh, 8)}")
     print("     " + "   ".join(f"N={N}: {mp.nstr(v, 7)}" for N, v in qator))
     if nol:
         # sigma = sigma*: h^4 hadi yo'q, bosh had -sigma h^5/(1440 sqrt3) [(Lf)(0)+(Lf)(1)]
@@ -171,7 +171,7 @@ def teorema7(F, Nlar, jad, sigma):
         if abs(h5) < NOL:
             print("     h^4 va h^5 hadlari ham nolga teng; xatolik undan ham tezroq kamayadi.")
             return bosh
-        print("     h^4 hadi nolga teng (sigma = sigma*), xatolik O(h^5). Teorema 7 dagi h^5 hadi bilan nisbat"
+        print("     h^4 hadi nolga teng (sigma = sigma*), xatolik O(h^5). h^5 hadi bilan nisbat (h^5 hadi maqolada keltirilmagan, qo'shimcha tekshiruv)"
               " (1 ga intilishi kerak):")
         print("     " + "   ".join(f"N={N}: {mp.nstr(R * mp.mpf(N)**5 / h5, 6)}"
                                    for N, R in zip(Nlar, jad["Optimal"])))
@@ -242,7 +242,7 @@ def xulosa(F, U, Nlar, jad, sigma, sigma_avto, eng_yaxshi_sigma=None):
     q.append("2. Aniqlik:")
     if "Optimal" in aniq:
         q.append(f"   Optimal formula bu funksiyani aniq integrallaydi: f(x) span{{1, x, e^(-sigma x)}} ga tegishli")
-        q.append(f"   (sigma = {mp.nstr(sigma, 6)}; Teorema 5). Bu formula aynan shunday funksiyalar uchun qurilgan.")
+        q.append(f"   (sigma = {mp.nstr(sigma, 6)}; maqoladagi 4-teorema). Bu formula aynan shunday funksiyalar uchun qurilgan.")
     if "Moslangan E-M" in aniq:
         tur = "e^(+-sigma x)" if s2 is not None and s2 > 0 else "cos(omega x), sin(omega x)"
         q.append(f"   Moslangan Euler-Maclaurin aniq: f(x) span{{1, x, {tur}}} ga tegishli (Taklif 2, Izoh 8).")
@@ -271,7 +271,7 @@ def xulosa(F, U, Nlar, jad, sigma, sigma_avto, eng_yaxshi_sigma=None):
     if silliq_emas:
         q.append("   Ba'zi usullar kutilgan tartibga yetmayapti. Sabablari: funksiya (yoki uning yuqori tartibli")
         q.append("   hosilalari) oraliqda yetarlicha silliq emas, yoki N hali asimptotik rejimga yetmagan.")
-        q.append("   Teorema 7 f in C^5[0,1] ni talab qiladi; masalan x^(5/2) da f''' chegarada cheksiz va optimal")
+        q.append("   Bosh had formulasi (2-gipoteza) f in C^6[0,1] ni talab qiladi; masalan x^(5/2) da f''' chegarada cheksiz va optimal")
         q.append("   formulaning ustunligi yo'qoladi. Bunday funksiyada N ni oshiring, oraliqni bo'ling yoki")
         q.append("   o'zgaruvchini almashtirib (masalan x = t^2) singulyarlikni yo'qoting.")
     else:
@@ -286,7 +286,7 @@ def xulosa(F, U, Nlar, jad, sigma, sigma_avto, eng_yaxshi_sigma=None):
     else:
         if not hosila_chekli:
             mos = False
-            q.append("   f'' yoki f''' oraliq chetida cheksiz: sigma* = -[f''']/[f''] aniqlanmaydi va Teorema 7 ning")
+            q.append("   f'' yoki f''' oraliq chetida cheksiz: sigma* = -[f''']/[f''] aniqlanmaydi va bosh had formulasining")
             q.append("   sharti (f in C^5[0,1]) bajarilmaydi. Optimal formula bu funksiya uchun qurilgan fazoga to'liq")
             q.append("   mos emas; uning xatoligi klassik formulalar tartibida qoladi (3-bandga qarang).")
         elif ss is None:
@@ -298,7 +298,7 @@ def xulosa(F, U, Nlar, jad, sigma, sigma_avto, eng_yaxshi_sigma=None):
             if abs(ss) * h > 1.4:
                 mos = False
                 q.append(f"   sigma* = {mp.nstr(ss, 5)} juda katta: sigma*h = {mp.nstr(abs(ss) * h, 3)} > 1.4, asimptotik rejimga yetilmagan.")
-                q.append(f"   Teorema 7 bahosi faqat N >~ {int(abs(ss)) + 1} dan boshlab ishlaydi; kichik N da natija ishonchsiz.")
+                q.append(f"   Bosh had bahosi faqat N >~ {int(abs(ss)) + 1} dan boshlab ishlaydi; kichik N da natija ishonchsiz.")
             elif abs(ss) / Nlar[0] > 1.4:
                 q.append(f"   sigma* = {mp.nstr(ss, 5)} nisbatan katta: kichik N lar ({Nlar[0]}...) da asimptotik rejim hali boshlanmagan,")
                 q.append(f"   ustunlik N >~ {int(abs(ss)) + 1} dan keyin namoyon bo'ladi.")
@@ -307,7 +307,7 @@ def xulosa(F, U, Nlar, jad, sigma, sigma_avto, eng_yaxshi_sigma=None):
                 q.append(f"   (h^4/720)*({mp.nstr(bosh, 4)}) saqlanib qoladi, tartib 4. sigma = sigma* da tartib 5 bo'lardi (--sigma auto).")
             else:
                 q.append("   sigma = sigma* tanlangan: h^4 hadi yo'qoladi, xatolik bosh hadi")
-                q.append(f"   -sigma h^5/(1440 sqrt3) [(Lf)(0)+(Lf)(1)] (Teorema 7), tartib 5.")
+                q.append(f"   -sigma h^5/(1440 sqrt3) [(Lf)(0)+(Lf)(1)], tartib 5 (h^5 hadi maqolada keltirilmagan).")
             if eng_yaxshi_sigma is not None and ss is not None and abs(eng_yaxshi_sigma - ss) > 0.15 * max(1, abs(ss)):
                 q.append(f"   Eslatma: to'rdagi eng yaxshi sigma ~ {mp.nstr(eng_yaxshi_sigma, 4)} (sigma* dan farqli) -- N kichikligi belgisi.")
         e_em, e_op = oxirgi.get("Euler-Maclaurin"), oxirgi.get("Optimal")
@@ -333,16 +333,16 @@ def xulosa(F, U, Nlar, jad, sigma, sigma_avto, eng_yaxshi_sigma=None):
     if g in aniq:
         q.append("   U bu funksiyani aniq integrallaydi (2-bandga qarang).")
     elif g == "Moslangan E-M":
-        q.append("   U simmetrik formula: xatolik yoyilmasida faqat juft darajalar (h^4, h^6, ...) bor (Taklif 2).")
+        q.append("   U simmetrik formula: xatolik yoyilmasida faqat juft darajalar (h^4, h^6, ...) bor (bu qoida maqolada ko'rib chiqilmagan).")
         q.append("   sigma_E^2 = [f''']/[f'] tanlanganda h^4 hadi yo'qoladi va xatolik O(h^6) bo'ladi. Optimal formula")
-        q.append("   esa nosimmetrik, uning h^5 hadi (Teorema 7) sigma = sigma* da ham qoladi -- shuning uchun silliq")
+        q.append("   esa nosimmetrik, uning h^5 hadi sigma = sigma* da ham qoladi -- shuning uchun silliq")
         q.append("   funksiyalarda moslangan E-M odatda yutadi, garchi eng yomon holatdagi xatolik (norma) ikkalasida")
-        q.append("   deyarli bir xil bo'lsa ham (Teorema 6). U faqat 2 ta hosila qiymatidan foydalanadi.")
+        q.append("   deyarli bir xil bo'lsa ham. U faqat 2 ta hosila qiymatidan foydalanadi.")
     elif g == "Optimal" and not mos:
         q.append("   Optimal formula birinchi o'rinda, lekin farq kichik va nazariy ustunlik yo'q (4-bandga qarang):")
         q.append("   bu yutuq tasodifiy o'zgarmas hisobiga, tartib hisobiga emas.")
     elif g == "Optimal":
-        q.append("   sigma parametri xatolikning h^4 hadini yo'qotadi yoki keskin kamaytiradi (Teorema 7), shu bilan")
+        q.append("   sigma parametri xatolikning h^4 hadini yo'qotadi yoki keskin kamaytiradi (maqoladagi 2-gipoteza), shu bilan")
         q.append("   Simpson va Euler-Maclaurin (tartib 4) dan o'zib ketadi. Formula Sard ma'nosida optimal: W_2^(3,2)")
         q.append("   fazosidagi eng yomon holat xatoligi minimal.")
     elif g == "Euler-Maclaurin":
@@ -355,18 +355,18 @@ def xulosa(F, U, Nlar, jad, sigma, sigma_avto, eng_yaxshi_sigma=None):
         q.append("   Odatda bu funksiya davriy (masalan, uning barcha hosilalari chegaralarda bir xil) ekanini bildiradi:")
         q.append("   davriy silliq funksiyalarda trapetsiya formulasi juda tez yaqinlashadi va tuzatmalar kerak emas.")
 
-    # 6. Teorema 7 tekshiruvi
+    # 6. Bosh had tekshiruvi
     if bosh is not None and "Optimal" not in aniq:
         q.append("")
         R = jad["Optimal"][-1]
         if not sigma_star and abs(bosh) > NOL:
             nis = 720 * mp.mpf(N)**4 * R / bosh
             holat = "asimptotik rejimda" if abs(nis - 1) < 0.1 else "hali asimptotik rejimga yetmagan"
-            q.append(f"6. Teorema 7: R_N / [(h^4/720)[Lf]_0^1] = {mp.nstr(nis, 5)} (N = {N}) -- {holat}.")
+            q.append(f"6. Bosh had (2-gipoteza): R_N / [(h^4/720)[Lf]_0^1] = {mp.nstr(nis, 5)} (N = {N}) -- {holat}.")
         elif sigma_star and L0 is not None and abs(L0 + L1) > NOL:
             nis = R * mp.mpf(N)**5 / (-sigma / (1440 * mp.sqrt(3)) * (L0 + L1))
             holat = "asimptotik rejimda" if abs(nis - 1) < 0.15 else "hali asimptotik rejimga yetmagan (tuzatma O(h))"
-            q.append(f"6. Teorema 7 (h^5 hadi): nisbat = {mp.nstr(nis, 5)} (N = {N}) -- {holat}.")
+            q.append(f"6. h^5 hadi (qo'shimcha tekshiruv): nisbat = {mp.nstr(nis, 5)} (N = {N}) -- {holat}.")
 
     q.append("")
     q.append("Eslatma: optimal formula N+1 ta hosila qiymatidan foydalanadi, lekin ichki koeffitsiyentlar")

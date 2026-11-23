@@ -1,10 +1,22 @@
 cff-version: 1.2.0
 message: "If you use this code, please cite the paper and this repository."
-title: "Numerical experiments for an optimal quadrature formula with derivative in W_2^(3,2)"
+title: "Code and data for: An exponentially fitted optimal quadrature formula with first derivative in the space W_2^(3,2)(0,1)"
 authors:
   - family-names: Hayotov
     given-names: Abdullo R.
   - family-names: Polvonov
     given-names: Sarvarbek Z.
+repository-code: "https://github.com/sarvarbek-zafar/w32-optimal-quadrature"
 year: 2026
 license: MIT
+preferred-citation:
+  type: article
+  title: "An exponentially fitted optimal quadrature formula with first derivative in the space W_2^(3,2)(0,1)"
+  authors:
+    - family-names: Hayotov
+      given-names: Abdullo R.
+    - family-names: Polvonov
+      given-names: Sarvarbek Z.
+  journal: "Calcolo"
+  year: 2026
+  notes: "Submitted"

@@ -121,14 +121,14 @@ function verdict(S) {
   const win = rank[0];
   /* suitability of the optimal formula */
   const why = []; let suits = true;
-  if (exact("op")) why.push(`<span class="good">To'liq mos:</span> optimal formula bu funksiyani mashina aniqligida integrallaydi — f(x) ning ko'rinishi 1, x va e<sup>−σx</sup> kombinatsiyasi (maqoladagi Teorema 5).`);
+  if (exact("op")) why.push(`<span class="good">To'liq mos:</span> optimal formula bu funksiyani mashina aniqligida integrallaydi — f(x) ning ko'rinishi 1, x va e<sup>−σx</sup> kombinatsiyasi (maqoladagi 4-teorema).`);
   else {
     if (!S.smooth) { suits = false; why.push(`<span class="bad">Mos emas:</span> f″ yoki f‴ oraliq chetida cheksiz. Formula silliq (C<sup>5</sup>) funksiyalar uchun mo'ljallangan, shuning uchun σ ni tanlash yordam bermaydi va xatolik klassik formulalar darajasida qoladi.`); }
     else if (S.sStar === null) { suits = false; why.push(`<span class="bad">Foyda yo'q:</span> f″(a) = f″(b), shuning uchun σ* mavjud emas. Xatolikning asosiy qismi (h⁴/720)[f‴ + σf″] bu holda σ ga bog'liq bo'lmay qoladi — σ ni tanlab yutib bo'lmaydi.`); }
     else {
       if (Math.abs(S.sStar) * h > 1.4) { suits = false; why.push(`<span class="bad">Hali erta:</span> σ* = ${sx(S.sStar)} juda katta, bunday N larda formula o'z kuchiga kirmaydi; N ≳ ${Math.ceil(Math.abs(S.sStar))} dan keyin foydasi ko'rinadi.`); }
       else if (Math.abs(S.sStar) / S.Ns[0] > 1.4) why.push(`σ* = ${sx(S.sStar)} nisbatan katta: kichik N larda ustunlik sezilmaydi, N ≳ ${Math.ceil(Math.abs(S.sStar))} dan boshlab namoyon bo'ladi.`);
-      if (S.isStar) why.push(`σ = σ* = ${sx(S.sStar)} tanlandi: bu xatolikning asosiy (h⁴) hadini yo'qotadi, shuning uchun xatolik h⁵ kabi kamayadi (Teorema 7).`);
+      if (S.isStar) why.push(`σ = σ* = ${sx(S.sStar)} tanlandi: bu xatolikning asosiy (h⁴) hadini yo'qotadi, shuning uchun xatolik h⁵ kabi kamayadi (maqoladagi 2-gipoteza).`);
       else why.push(`Siz σ = ${sx(S.sig)} tanladingiz, σ* = ${sx(S.sStar)} esa boshqa: xatolikning h⁴ hadi qoladi. „Avtomatik“ rejimda natija yaxshiroq bo'ladi.`);
     }
     if (ok("em") && ok("op") && Math.abs(err("op")) > tol) {
@@ -140,9 +140,9 @@ function verdict(S) {
   }
   /* why the winner wins */
   let wtxt = "";
-  if (exact(win.id)) wtxt = win.id === "fe" ? `U bu funksiyani mashina aniqligida integrallaydi: f(x) 1, x va e<sup>±σx</sup> (yoki cos, sin) kombinatsiyasi.` : win.id === "op" ? `U bu funksiyani mashina aniqligida integrallaydi (Teorema 5).` : `U bu funksiyani mashina aniqligida integrallaydi.`;
-  else if (win.id === "fe") wtxt = `Bu formula simmetrik: xatolik faqat h⁴, h⁶, … juft darajalardan iborat. σ<sub>E</sub>² = [f‴]/[f′] tanlanganda h⁴ hadi yo'qoladi va xatolik h⁶ kabi kamayadi. Optimal formula nosimmetrik bo'lgani uchun unda h⁵ hadi qoladi. Eng yomon holatdagi xatolik (norma) ikkalasida deyarli bir xil (Teorema 6), lekin silliq funksiyalarda moslangan E–M odatda yutadi. U faqat 2 ta hosila qiymatidan foydalanadi.`;
-  else if (win.id === "op") wtxt = suits ? `σ parametri xatolikning asosiy hadini yo'qotadi (Teorema 7), shuning uchun formula 4-tartibli Simpson va Euler–Maclaurin formulalaridan o'zib ketadi.` : `Birinchi o'rinda, lekin farq kichik va nazariy ustunlik yo'q (yuqoriga qarang).`;
+  if (exact(win.id)) wtxt = win.id === "fe" ? `U bu funksiyani mashina aniqligida integrallaydi: f(x) 1, x va e<sup>±σx</sup> (yoki cos, sin) kombinatsiyasi.` : win.id === "op" ? `U bu funksiyani mashina aniqligida integrallaydi (maqoladagi 4-teorema).` : `U bu funksiyani mashina aniqligida integrallaydi.`;
+  else if (win.id === "fe") wtxt = `Bu formula simmetrik: xatolik faqat h⁴, h⁶, … juft darajalardan iborat. σ<sub>E</sub>² = [f‴]/[f′] tanlanganda h⁴ hadi yo'qoladi va xatolik h⁶ kabi kamayadi. Optimal formula nosimmetrik bo'lgani uchun unda h⁵ hadi qoladi. Eng yomon holatdagi xatolik (norma) ikkalasida deyarli bir xil, lekin silliq funksiyalarda moslangan E–M odatda yutadi. U faqat 2 ta hosila qiymatidan foydalanadi.`;
+  else if (win.id === "op") wtxt = suits ? `σ parametri xatolikning asosiy hadini yo'qotadi (maqoladagi 2-gipoteza), shuning uchun formula 4-tartibli Simpson va Euler–Maclaurin formulalaridan o'zib ketadi.` : `Birinchi o'rinda, lekin farq kichik va nazariy ustunlik yo'q (yuqoriga qarang).`;
   else if (win.id === "em") wtxt = `Klassik Euler–Maclaurin 4-tartibli va faqat 2 ta hosila ishlatadi; bu funksiyada σ ni sozlash foyda bermadi.`;
   else if (win.id === "si") wtxt = `Simpson hosilasiz 4-tartib beradi; hosila ishlatuvchi formulalar bu funksiyada foyda bermadi (odatda funksiya chetlarda silliq bo'lmaganda).`;
   else wtxt = `Odatda bu funksiya davriy (chetlardagi hosilalar bir xil) yoki tugunlar orasida chiziqli ekanini bildiradi: bunday funksiyalarda trapetsiya formulasining o'zi juda aniq, tuzatmalar esa faqat xalaqit beradi.`;

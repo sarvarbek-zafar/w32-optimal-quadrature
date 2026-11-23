@@ -105,7 +105,8 @@ _kesh = {}
 
 def C1(s, N):
     """Optimal koeffitsiyentlar C_{b,1}(sigma), b = 0..N (keshlangan)."""
-    k = (mp.nstr(mp.mpf(s), 30), N)
+    # key: full value of sigma and the current precision (recomputed if the precision changes)
+    k = (mp.nstr(mp.mpf(s), mp.mp.dps + 5), N, mp.mp.dps)
     if k not in _kesh:
         if mp.mpf(s) == 0:
             raise ValueError("sigma = 0 bo'lishi mumkin emas")
@@ -143,6 +144,50 @@ def simpson(F, N):
 def eyler_makloren(F, N):
     h = mp.mpf(1) / N
     return trapetsiya(F, N) + h**2 / 12 * (F["df"](0) - F["df"](1))
+
+
+_gl = {}
+
+
+def gauss2(F, N):
+    """Kompozit ikki nuqtali Gauss-Lejandr: N/2 ta bo'lak, N ta funksiya qiymati."""
+    if N % 2:
+        return None
+    m = N // 2
+    H = mp.mpf(1) / m
+    a = 1 / mp.sqrt(3)
+    f = F["f"]
+    return H / 2 * sum(f(H * (j + (1 - a) / 2)) + f(H * (j + (1 + a) / 2)) for j in range(m))
+
+
+def boole(F, N):
+    """Kompozit Bul qoidasi (N 4 ga bo'linadi), 6-tartib, N+1 ta teng uzoqlikdagi tugun."""
+    if N % 4:
+        return None
+    h = mp.mpf(1) / N
+    f = F["f"]
+    return 2 * h / 45 * sum(7 * f(h * j) + 32 * f(h * (j + 1)) + 12 * f(h * (j + 2)) + 32 * f(h * (j + 3)) + 7 * f(h * (j + 4))
+                            for j in range(0, N, 4))
+
+
+def sigma_runge(F, N, s0=1, s1=2, qadamlar=40):
+    """sigma_R(N): Q_N(sigma) - Q_{N/2}(sigma) = 0 tenglamaning ildizi (kesuvchilar usuli).
+    Faqat f va f' ning N+1 ta tugundagi qiymatlari ishlatiladi (N/2 to'r tugunlari N to'rning qismi)."""
+    if N % 2:
+        raise ValueError("N juft bo'lishi kerak")
+    d = lambda s: optimal(F, N, s) - optimal(F, N // 2, s)
+    a, b = mp.mpf(s0), mp.mpf(s1)
+    fa, fb = d(a), d(b)
+    for _ in range(qadamlar):
+        if fb == fa:
+            break
+        c = b - fb * (b - a) / (fb - fa)
+        if c == 0:
+            break
+        a, fa, b, fb = b, fb, c, d(c)
+        if abs(b - a) < mp.mpf(10)**(-25) * max(1, abs(b)):
+            break
+    return b
 
 
 _gl = {}
@@ -193,7 +238,8 @@ def em_fitted(F, N, s2):
 
 
 def C1_sodda(s, N):
-    """Simple closed form of the optimal coefficients (Theorem 4 of the paper)."""
+    """Simplified closed form of the optimal coefficients C_{beta,1}.
+    Equivalent to Theorem 3 of the paper (agrees with C1 to ~1e-45); used by the online calculator."""
     with mp.workdps(_dps(s)):
         p = parametrlar(s, N)
         h, q, lam, s_ = p["h"], p["q"], p["lam"], p["s"]

@@ -3,7 +3,7 @@ paper_numerics.py -- reproduces every table and figure of the paper
     "An optimal quadrature formula with derivative exact for exponential functions
      in the Hilbert space W_2^{(3,2)}(0,1)".
 
-Run:  python paper_numerics.py      (about 1-2 minutes)
+Run:  python paper_numerics.py      (a few minutes)
 Output: tables/*.tex (table bodies) and figures/*.pdf
 Requires: mpmath, sympy, matplotlib, and the modules kvadratura.py, sigma_tahlil.py.
 """
@@ -69,11 +69,24 @@ for s in [-2, 0.5, 1, 3, 10]:
     rows.append("\\midrule")
 save("tab_exact.tex", rows[:-1])
 
-# ---------------------------------------------------------------- Tables: exponential and trigonometric functions
-EXP = ["exp(-0.5*x)", "exp(-2*x)", "exp(-20*x)", "exp(3*x)", "exp(-x) + exp(-3*x)", "cosh(2*x)", "x*exp(-2*x)",
-       "(1 + x**2)*exp(-x)", "exp(-x**2)", "1/(1 + exp(-5*x))"]
-TRIG = ["sin(x)", "cos(x)", "cos(2*x)", "sin(x)**2", "cos(5*x)", "exp(-x)*sin(5*x)", "exp(-2*x)*cos(3*x)",
-        "exp(-3*x)*sin(10*x)", "cos(x) + exp(-2*x)", "sin(3*x)", "sin(20*x)", "sin(pi*x)"]
+# ---------------------------------------------------------------- Table: norm of the error functional
+rows = []
+for s in [1, 3]:
+    prev = None
+    for N in [4, 8, 16, 32, 64, 128]:
+        C = K.C1(s, N)
+        n_opt = mp.sqrt(S.norma2(s, N, C))
+        Cem = [mp.mpf(0)] * (N + 1)
+        H1 = sum(C[j] * mp.e**(-mp.mpf(s) * j / N) for j in range(N + 1))          # = H_1 by (3.7)
+        Cem[0] = H1 / (1 - mp.e**(-mp.mpf(s)))
+        Cem[N] = -Cem[0]
+        n_em = mp.sqrt(S.norma2(s, N, Cem))
+        p_ = "--" if prev is None else f"{float(mp.log(prev / n_opt, 2)):.4f}"
+        rows.append(f"{'$' + str(s) + '$' if N == 4 else ''} & {N} & ${sci(n_opt, 5)}$ & {p_} & "
+                    f"{mp.nstr(mp.sqrt(30240) * N**3 * n_opt, 7)} & {mp.nstr(n_em / n_opt, 7)} \\\\")
+        prev = n_opt
+    rows.append("\\midrule")
+save("tab_norm.tex", rows[:-1])
 
 
 def latex_name(e):
@@ -81,89 +94,48 @@ def latex_name(e):
     return "$" + sp.latex(K.Funksiya(e)["ifoda"]) + "$"
 
 
-def method_table(funcs, N, fname):
-    """Columns: f | sigma* | optimal(sigma*) | Simpson | E-M | sigma_E^2 | fitted E-M(sigma_E^2)."""
-    out = []
-    for e in funcs:
-        F = K.Funksiya(e)
-        ss = F["sigma_nazariy"]
-        sig = ss if ss is not None else mp.mpf(1)
-        s2 = F["sigma2_E"]
-        eo = abs(F["I"] - K.optimal(F, N, sig))
-        es = abs(F["I"] - K.simpson(F, N))
-        ee = abs(F["I"] - K.eyler_makloren(F, N))
-        ef = abs(F["I"] - K.em_fitted(F, N, s2 if s2 is not None else 0))
-        tiny = mp.mpf(10)**-35
-        best = min(eo, es, ee, ef)
-        def f(v):
-            if v < tiny:
-                return "\\mathbf{exact}" if best < tiny else "exact"
-            return ("\\mathbf{" + sci(v) + "}") if v == best else sci(v)
-        sig_s = "--" if ss is None else f"${float(ss):.4g}$"
-        s2_s = "--" if s2 is None else f"${float(s2):.4g}$"
-        out.append(f"{latex_name(e)} & {sig_s} & ${f(eo)}$ & ${f(es)}$ & ${f(ee)}$ & {s2_s} & ${f(ef)}$ \\\\")
-    save(fname, out)
-
-
-method_table(EXP, 16, "tab_exp.tex")
-method_table(TRIG, 16, "tab_trig.tex")
-
-# ---------------------------------------------------------------- Table: h^5 term after tuning (Theorem 7)
+# ---------------------------------------------------------------- Table: comparison with classical rules
+# Integrands that are NOT of exponential type (polynomials, rational, algebraic, logarithmic functions).
+# sigma_R is found from the values of f and f' at the nodes only (root of Q_N - Q_{N/2}).
+CMP = ["x**4", "x**6", "1/(1+x)", "1/(1+x)**2", "sqrt(1+x)", "(1+x)**Rational(3,2)", "log(1+x)", "x*log(1+x)",
+       "atan(x)", "tan(x)", "x**Rational(7,2)", "1/(1+25*x**2)"]
+NAME = {"x**Rational(7,2)": "$x^{7/2}$", "log(1+x)": "$\\ln(1+x)$", "atan(x)": "$\\arctan x$", "tan(x)": "$\\tan x$",
+        "1/(1+x)": "$1/(1+x)$", "sqrt(1+x)": "$\\sqrt{1+x}$", "1/(1+25*x**2)": "$1/(1+25x^2)$", "1/(1+x**2)": "$1/(1+x^2)$",
+        "x**2*(1-x)**2": "$x^2(1-x)^2$", "x**4": "$x^4$", "x**6": "$x^6$",
+        "1/(1+x)**2": "$1/(1+x)^2$", "(1+x)**Rational(3,2)": "$(1+x)^{3/2}$", "x*log(1+x)": "$x\\ln(1+x)$"}
+RULES = [("Simpson", K.simpson), ("Gauss-2", K.gauss2), ("E--M", K.eyler_makloren), ("Boole", K.boole)]
+NC = 32
+rat = lambda v: f"{float(v):.3g}" if v < 1000 else str(int(float(mp.nstr(v, 3))))
 rows = []
-r3 = mp.sqrt(3)
-for e in ["exp(-x) + exp(-3*x)", "x*exp(-2*x)", "exp(-x**2)", "sin(x)", "exp(-2*x)*cos(3*x)", "cos(x) + exp(-2*x)"]:
-    import sympy as sp
+for e in CMP:
     F = K.Funksiya(e)
-    ex = F["ifoda"]
     ss = F["sigma_nazariy"]
-    d2 = sp.lambdify(K.x, sp.diff(ex, K.x, 2), "mpmath")
-    d3 = sp.lambdify(K.x, sp.diff(ex, K.x, 3), "mpmath")
-    L = lambda t: d3(t) + ss * d2(t)
-    cells = []
-    for N in (16, 64):
-        h = mp.mpf(1) / N
-        R = F["I"] - K.optimal(F, N, ss)
-        pred = -ss * h**5 / (1440 * r3) * (L(0) + L(1))
-        cells += [f"${sci(R)}$", f"{float(R / pred):.4f}"]
-    rows.append(f"{latex_name(e)} & ${float(ss):.4g}$ & " + " & ".join(cells) + " \\\\")
-save("tab_h5.tex", rows)
+    sr = K.sigma_runge(F, NC)
+    errs = [abs(F["I"] - K.optimal(F, NC, sr))] + [abs(F["I"] - fn(F, NC)) for _, fn in RULES]
+    best = min(errs)
+    cell = lambda v: "exact" if v < mp.mpf(10)**-35 else ("$\\mathbf{" + sci(v) + "}$" if v == best else "$" + sci(v) + "$")
+    if best < mp.mpf(10)**-35:
+        cell = lambda v: "\\textbf{exact}" if v < mp.mpf(10)**-35 else "$" + sci(v) + "$"
+    sstar = "--" if ss is None else f"${float(ss):.4g}$"
+    r16, r64 = [], []
+    for n_, store in ((16, r16), (64, r64)):
+        s_ = K.sigma_runge(F, n_)
+        store.append(abs(F["I"] - K.eyler_makloren(F, n_)) / abs(F["I"] - K.optimal(F, n_, s_)))
+    rows.append(f"{NAME[e]} & ${float(sr):.4g}$ & " + " & ".join(cell(v) for v in errs)
+                + f" & {rat(r16[0])} & {rat(errs[3] / errs[0])} & {rat(r64[0])} \\\\")
+save("tab_classic.tex", rows)
 
-# ---------------------------------------------------------------- Table: norm of the error functional
+# sigma_R(N) -> sigma*, and the observed order of the self-tuned formula
 rows = []
-for s in (1, 3):
-    s = mp.mpf(s)
-    prev = None
-    for N in (4, 8, 16, 32, 64, 128):
-        h = mp.mpf(1) / N
-        n_opt = mp.sqrt(S.norma2(s, N, K.C1(s, N)))
-        c = K.c_sigma(s**2, N)
-        Cem = [mp.mpf(0)] * (N + 1)
-        Cem[0], Cem[N] = c, -c
-        n_em = mp.sqrt(S.norma2(s, N, Cem))
-        p = "--" if prev is None else f"{float(mp.log(prev / n_opt, 2)):.4f}"
-        lab = f"${int(s)}$" if N == 4 else ""
-        rows.append(f"{lab} & {N} & ${sci(n_opt, 5)}$ & {p} & {mp.nstr(mp.sqrt(30240) * N**3 * n_opt, 7)} & "
-                    f"{mp.nstr(1 / mp.sqrt(1 + s**2 * h**2 / 40), 7)} & {mp.nstr(n_em / n_opt, 7)} \\\\")
-        prev = n_opt
-    rows.append("\\midrule")
-save("tab_norm.tex", rows[:-1])
-
-# ---------------------------------------------------------------- Table: comparison with classical rules, sigma = 1
-rows = []
-for e, nm in [("exp(x)", "$e^{x}$"), ("log(1+x)", "$\\ln(1+x)$"), ("exp(-x)*cos(10*x)", "$e^{-x}\\cos 10x$"), ("x**(5/2)", "$x^{5/2}$")]:
+for e in ["x**6", "1/(1+x)", "sqrt(1+x)", "log(1+x)", "x**Rational(7,2)"]:
     F = K.Funksiya(e)
-    errs = {k: [] for k in ("o", "t", "s", "e")}
-    Ns = (8, 16, 32, 64)
-    for j, N in enumerate(Ns):
-        vals = (abs(F["I"] - K.optimal(F, N, 1)), abs(F["I"] - K.trapetsiya(F, N)),
-                abs(F["I"] - K.simpson(F, N)), abs(F["I"] - K.eyler_makloren(F, N)))
-        for k, v in zip(("o", "t", "s", "e"), vals):
-            errs[k].append(v)
-        lab = f"\\multirow{{4}}{{*}}{{{nm}}}" if j == 0 else ""
-        rows.append(f"{lab} & {N} & " + " & ".join(f"${sci(v)}$" for v in vals) + " \\\\")
-    rows.append(" & $p$ & " + " & ".join(f"{float(mp.log(errs[k][-2] / errs[k][-1], 2)):.2f}" for k in ("o", "t", "s", "e")) + " \\\\")
-    rows.append("\\midrule")
-save("tab_classic.tex", rows[:-1])
+    Ns = [8, 16, 32, 64, 128]
+    sr = [K.sigma_runge(F, n) for n in Ns]
+    er = [abs(F["I"] - K.optimal(F, n, s_)) for n, s_ in zip(Ns, sr)]
+    em = [abs(F["I"] - K.eyler_makloren(F, n)) for n in Ns]
+    rows.append(f"{NAME[e]} & ${float(F['sigma_nazariy']):.4g}$ & " + " & ".join(f"${float(v):.4f}$" for v in sr[1:])
+                + f" & {float(mp.log(er[-2] / er[-1], 2)):.2f} & {float(mp.log(em[-2] / em[-1], 2)):.2f} \\\\")
+save("tab_sigmaR.tex", rows)
 
 # ---------------------------------------------------------------- Table: leading term check
 rows = []
@@ -213,28 +185,27 @@ ax.set_xlabel("$\\tau$  (integrand $e^{-\\tau x}$)"); ax.set_ylabel("$|R_N(e^{-\
 ax.set_title(f"Error for $f(x)=e^{{-\\tau x}}$, $N={N}$"); ax.legend(loc="lower left")
 fig.tight_layout(); fig.savefig(os.path.join(HERE, "..", "figures", "fig_tau.pdf"))
 
-# Fig. 3: convergence
-sel = ["exp(-x) + exp(-3*x)", "x*exp(-2*x)", "exp(-x**2)", "sin(x)", "exp(-2*x)*cos(3*x)", "cos(x) + exp(-2*x)"]
-Ns = [4, 8, 16, 32, 64]
-COL5, MK5 = COL + ["#7b4fc8"], MK + ["v"]
-fig, axs = plt.subplots(2, 3, figsize=(10, 5.8))
+# Fig. 3: convergence on non-exponential integrands, sigma = sigma_R(N)
+sel = ["x**6", "1/(1+x)", "log(1+x)", "sqrt(1+x)", "x**Rational(7,2)", "1/(1+25*x**2)"]
+Ns = [8, 16, 32, 64, 128]
+COL5 = ["#2a78d6", "#eb6834", "#eda100", "#1baf7a", "#7b5bd6"]
+MK5 = ["o", "s", "^", "D", "v"]
+fig, axs = plt.subplots(2, 3, figsize=(10, 6.0))
 for ax, e in zip(axs.flat, sel):
     F = K.Funksiya(e)
-    ss = F["sigma_nazariy"]
-    s2 = F["sigma2_E"]
-    ser = [(f"optimal, $\\sigma^*={float(ss):.3g}$", lambda n: K.optimal(F, n, ss)),
-           ("trapezoidal", lambda n: K.trapetsiya(F, n)), ("Simpson", lambda n: K.simpson(F, n)),
-           ("Euler--Maclaurin", lambda n: K.eyler_makloren(F, n)),
-           (f"fitted E--M, $\\sigma_E^2={float(s2):.3g}$", lambda n: K.em_fitted(F, n, s2))]
+    ser = [("optimal, $\\sigma=\\sigma_R(N)$", lambda n: K.optimal(F, n, K.sigma_runge(F, n))),
+           ("Simpson", lambda n: K.simpson(F, n)),
+           ("Gauss-2", lambda n: K.gauss2(F, n)), ("Euler--Maclaurin", lambda n: K.eyler_makloren(F, n)),
+           ("Boole", lambda n: K.boole(F, n))]
     for k, (lab, fn) in enumerate(ser):
-        ys = [float(abs(F["I"] - fn(n))) for n in Ns]
-        if max(ys) < 1e-30:          # exact rule: do not squash the axis, mark it in the legend
-            ax.plot([], [], color=COL5[k], marker=MK5[k], ms=3.5, label=lab + " (exact)")
-            continue
-        ax.loglog(Ns, ys, color=COL5[k], marker=MK5[k], ms=3.5, label=lab)
+        ax.loglog(Ns, [float(abs(F["I"] - fn(n))) for n in Ns], color=COL5[k], marker=MK5[k], ms=3.5,
+                  lw=1.8 if k == 0 else 1.1, label=lab)
     ax.set_xticks(Ns); ax.set_xticklabels([str(n) for n in Ns]); ax.xaxis.set_minor_formatter(plt.NullFormatter())
-    ax.set_title(latex_name(e), fontsize=10); ax.set_xlabel("$N$"); ax.legend(fontsize=6.5, loc="lower left")
-fig.tight_layout(); fig.savefig(os.path.join(HERE, "..", "figures", "fig_conv.pdf"))
+    ax.set_title(NAME[e], fontsize=10); ax.set_xlabel("$N$")
+axs.flat[0].set_ylabel("$|R_N(\\varphi)|$"); axs.flat[3].set_ylabel("$|R_N(\\varphi)|$")
+hd, lb = axs.flat[0].get_legend_handles_labels()
+fig.legend(hd, lb, loc="lower center", ncol=5, fontsize=8, frameon=False)
+fig.tight_layout(rect=(0, 0.05, 1, 1)); fig.savefig(os.path.join(HERE, "..", "figures", "fig_conv.pdf"))
 
 # Fig. 4: leading term law
 N = 32

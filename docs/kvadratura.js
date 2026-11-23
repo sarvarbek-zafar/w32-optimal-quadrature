@@ -31,7 +31,7 @@ function lambda1(x) {
   }
   return -2 / (r + Math.sqrt(r * r - 4));
 }
-/* Theorem 4: optimal derivative weights C_{beta,1}, beta = 0..N, on [0,1] */
+/* Optimal derivative weights (simplified closed form, equivalent to Theorem 3 of the paper): C_{beta,1}, beta = 0..N, on [0,1] */
 function C1opt(s, N) {
   const h = 1 / N, x = s * h, lam = lambda1(x), D = h * h * dfun(x * x);
   let A, B;                       /* A = (q-lam)/(q-1), B = (1-lam q)/(q-1) */

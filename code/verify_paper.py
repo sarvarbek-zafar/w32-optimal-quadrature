@@ -1,8 +1,10 @@
 """
-verify_paper.py -- independent check of every formula stated in paper.tex.
+verify_paper.py -- independent numerical check of the formulas of paper.tex for several (sigma, N).
+It complements, but does not replace, the proofs given in the paper.
 The formulas are transcribed from the paper itself (not imported from earlier modules);
 the reference is the direct LU solution of system (5.1)-(5.3) assembled from the definitions.
 """
+import sys
 import mpmath as mp
 
 mp.mp.dps = 50
@@ -174,12 +176,12 @@ for s, N in [(1, 10), (0.5, 7), (3, 12), (2, 3)]:
     print(f"\n=== sigma={s}, N={N}, lambda1={mp.nstr(p['lam'], 12)}, |lam|e^(sh)={mp.nstr(abs(p['lam'])*p['q'], 4)}")
     # lambda1 is a root, |lambda1|<1, asymptotics
     chk("P2(lambda1)=0", abs(p["p2"] * p["lam"]**2 + p["p1"] * p["lam"] + p["p2"]) / abs(p["p2"]), 1e-40)
-    chk("lambda1 asymptotics (6.2), error / (sigma h)^4 bounded", abs(p["lam"] - (mp.sqrt(3) - 2 + (mp.sqrt(3) / 15 - mp.mpf(1) / 10) * (s * h)**2)) / (s * h)**4, 0.05)
+    chk("lambda1 asymptotics (6.1), error / (sigma h)^4 bounded", abs(p["lam"] - (mp.sqrt(3) - 2 + (mp.sqrt(3) / 15 - mp.mpf(1) / 10) * (s * h)**2)) / (s * h)**4, 0.05)
     # (6.6): K1, A1 alternative forms
     lam, q = p["lam"], p["q"]
     chk("K1 form (6.6)", abs(p["K1"] - ((1 + q)**2 - q * (lam + 1 / lam))), 1e-35)
     chk("A1 form (6.6)", abs(p["A1"] - (1 - lam) * (q - lam) * (1 - q * lam) / (1 + lam)), 1e-40)
-    # D2 properties (6.4)
+    # D2 properties (6.3)
     L = 600
     ms = range(-L, L + 1)
     chk("D2*1 = 0", abs(sum(D2(m, p) for m in ms)), 1e-25)
@@ -189,7 +191,7 @@ for s, N in [(1, 10), (0.5, 7), (3, 12), (2, 3)]:
     for b in (0, 1, 2):
         chk(f"D2*G2 = delta at beta={b}", abs(sum(D2(b - m, p) * G2(h * m, s) for m in ms) - (1 if b == 0 else 0)), 1e-15)
     # H1
-    chk("H1 closed (7.1) vs definition (3.6)", abs(p["H1"] - H1_def(s, N)) / p["H1"], 1e-40)
+    chk("H1 closed (7.1) vs definition (3.8)", abs(p["H1"] - H1_def(s, N)) / p["H1"], 1e-40)
     # F1, F11, F12
     e1 = e11 = e12 = 0
     for b in range(N + 1):
@@ -200,11 +202,11 @@ for s, N in [(1, 10), (0.5, 7), (3, 12), (2, 3)]:
         e12 = max(e12, abs(F12 - F12_closed(X, s, h)))
     chk("F11 closed (proof of Lemma 3)", e11, 1e-35)
     chk("F12 closed (proof of Lemma 3)", e12, 1e-35)
-    chk("F1 closed (7.2)-(7.3) vs definition (4.4)", e1, 1e-35)
+    chk("F1 closed (7.2)-(7.3) vs definition (4.6)", e1, 1e-35)
     # direct solution, theorem
     Cd, cA, cB = direct(s, N)
     Ct, Bm, Bp = theorem(p)
-    chk("Theorem 3 coefficients vs direct solution (relative)", rel(Ct, Cd), 1e-35)
+    chk("Theorem 2 coefficients vs direct solution (relative)", rel(Ct, Cd), 1e-35)
     Bt = sum(Cd[g] * mp.e**(s * h * g) for g in range(N + 1)) / (4 * s**3)
     chk("B^- = calB + tilde B", abs(Bm - (cB + Bt)) / abs(Bm), 1e-30)
     chk("B^+ = calB - tilde B", abs(Bp - (cB - Bt)) / abs(Bp), 1e-30)
@@ -217,7 +219,7 @@ for s, N in [(1, 10), (0.5, 7), (3, 12), (2, 3)]:
         u_def = sum(Cd[g] * G2(h * (N + k) - h * g, s) for g in range(N + 1)) + cA + cB * mp.e**(-s * h * (N + k))
         u_f = p["kap"] * mp.e**s * (mp.e**(s * h * k) - 1) + Bp * mp.e**(-s) * (mp.e**(-s * h * k) - 1) + F1_closed(N, p)
         eu = max(eu, abs(u_def - u_f))
-    chk("u2 outside [0,N]: definition vs (8.3)", eu, 1e-35)
+    chk("u2 outside [0,N]: definition vs (8.4)", eu, 1e-35)
     # norm: Lemma 1 vs -(ell, ell*G3) computed with quadrature
     C1 = Cd
     norm_lemma = (sum(C1[b] * C1[g] * G2(h * (b - g), s) for b in range(N + 1) for g in range(N + 1))
@@ -239,6 +241,21 @@ for s, N in [(1, 10), (0.5, 7), (3, 12), (2, 3)]:
             Ig = mp.quad(g, pts)
             ellg = Ig - sum(C0(j, N) * g(h * j) for j in range(N + 1)) - sum(C1[j] * dg(h * j) for j in range(N + 1))
         chk("norm^2: Lemma 1 vs -(ell, ell*G3) by quadrature (relative)", abs(norm_lemma + ellg) / norm_lemma, 1e-15)
+    # Lemma (lambda_1) and Lemma (determinant of the reduced system)
+    t = s * h
+    chk("p2 = -2e^t(sinh t - t), p1 = 4e^t(sinh t - t cosh t)", max(abs(p["p2"] + 2 * mp.e**t * (mp.sinh(t) - t)),
+                                                                   abs(p["p1"] - 4 * mp.e**t * (mp.sinh(t) - t * mp.cosh(t)))), 1e-40)
+    chk("-1 < lambda1 < 0 and p1^2 > 4 p2^2", 0 if (-1 < p["lam"] < 0 and p["p1"]**2 > 4 * p["p2"]**2) else 1, 0.5)
+    es_ = mp.e**s
+    Sp_, S0_, Sm_ = p["Sp"], p["S0"], p["Sm"]
+    a1_ = p["K1"] * (q - 1) - q * (q**2 - 1) + p["A1"] / lam**2 * (Sp_ - S0_)
+    b1_ = p["A1"] * lam**N / es_ * (Sm_ - S0_)
+    a2_ = p["A1"] * lam**N * (Sp_ - S0_)
+    b2_ = (p["K1"] * (1 / q - 1) + q - 1 / q + p["A1"] / lam**2 * (Sm_ - S0_)) / es_
+    Dl = -lam**2 * (q - lam) * (q - 1)**2 * (1 - lam * q) * (1 - lam**(2 * N)) / (es_ * (1 + lam)**2)
+    chk("Delta closed form (Lemma on the reduced system)", abs(a1_ * b2_ - a2_ * b1_ - Dl) / abs(Dl), 1e-35)
+    chk("a1, b2 closed forms", max(abs(a1_ - lam * (q - 1) * (1 - lam * q) / (1 + lam)),
+                                    abs(b2_ + lam * (q - lam) * (q - 1) / (es_ * (1 + lam)))), 1e-40)
     # exactness and reflection
     Q = lambda f, df: sum(C0(j, N) * f(h * j) for j in range(N + 1)) + sum(Ct[j] * df(h * j) for j in range(N + 1))
     chk("exact for 1, x, e^{-sx}", max(abs(1 - Q(lambda t: 1, lambda t: 0)), abs(mp.mpf(1) / 2 - Q(lambda t: t, lambda t: 1)),
@@ -246,111 +263,12 @@ for s, N in [(1, 10), (0.5, 7), (3, 12), (2, 3)]:
     Cneg = direct(-s, N)[0]
     chk("reflection C(-s)_b = -C(s)_{N-b} (Prop. 1)", rel(Cneg, [-Cd[N - b] for b in range(N + 1)]), 1e-35)
 
-# ================================================================== new results (Sections 10 and 12)
-print("\n=== Theorem 4 (simple closed form), Lemma 4, Corollary 1, Theorems 6-7, Proposition 2")
-
-
-def lam_root(s, h):
-    q = mp.e**(s * h)
-    p2 = 1 - q**2 + 2 * s * h * q
-    p1 = 2 * (q**2 - 1) - 2 * s * h * (1 + q**2)
-    r = [(-p1 - mp.sqrt(p1**2 - 4 * p2**2)) / (2 * p2), (-p1 + mp.sqrt(p1**2 - 4 * p2**2)) / (2 * p2)]
-    return min(r, key=abs)
-
-
-def c_sig(s, h):
-    return h / (2 * s) * mp.coth(s * h / 2) - 1 / s**2
-
-
-def simple(s, N):
-    """Theorem 4: (10.4)-(10.6)."""
-    h = mp.mpf(1) / N
-    q, lam = mp.e**(s * h), lam_root(s, h)
-    D = h**2 / 12 - c_sig(s, h)
-    mm = D * (1 - lam) * (q - lam) / (lam * (q - 1) * (1 + lam**N))
-    mp_ = D * (1 - lam) * (1 - lam * q) / (lam * (q - 1) * (1 + lam**N))
-    C = [mm * lam**b + mp_ * lam**(N - b) for b in range(N + 1)]
-    C[0] = h**2 / 12 - (lam * mm - lam**N * mp_) / (1 - lam)
-    C[N] = -h**2 / 12 - (lam * mp_ - lam**N * mm) / (1 - lam)
-    return C, mm, mp_, lam, q, D
-
-
-with mp.workdps(60):
-    worst, worst50 = mp.mpf(0), mp.mpf(0)
-    for s in [mp.mpf("0.01"), mp.mpf("0.5"), mp.mpf("-0.5"), mp.mpf(1), mp.mpf(3), mp.mpf(-2), mp.mpf(10), mp.mpf(-10)]:
-        for N in [1, 2, 3, 5, 8, 13, 20, 30]:
-            worst = max(worst, rel(simple(s, N)[0], direct(s, N)[0]))
-    for N in range(2, 31):
-        worst50 = max(worst50, rel(simple(mp.mpf(50), N)[0], direct(mp.mpf(50), N)[0]))
-chk("Theorem 4 vs direct solution, sigma in {0.01,+-0.5,1,3,-2,+-10}, N<=30", worst, 1e-40)
-chk("Theorem 4 vs direct solution, sigma=50, N=2..30 (60 digits)", worst50, 1e-37)
-print("    worst deviations:", mp.nstr(worst, 3), mp.nstr(worst50, 3))
-
-for s, N in [(1, 10), (3, 7), (-2, 9), (0.5, 3)]:
-    s = mp.mpf(s); h = mp.mpf(1) / N
-    C, mm, mp_, lam, q, D = simple(s, N)
-    f = lambda m: mp.sinh(s * h * m) - s * h * m
-    U1 = (q + lam**(N + 1) * q**(-N)) / (2 * (q - lam))
-    U2 = -(1 + (lam * q)**(N + 1)) / (2 * (1 - lam * q))
-    U3 = -s * h * (1 + lam**(N + 1)) / (1 - lam)
-    U4 = s * h * lam * (1 + lam**N * (N * (1 - lam) + 1)) / (1 - lam)**2
-    eA = max(abs(2 * s**3 * sum(lam**g * G2(h * (b - g), s) for g in range(N + 1)) - (U1 * q**b + U2 * q**(-b) + U3 * b + U4))
-             for b in range(N + 1))
-    chk(f"Lemma 4, sigma={s}, N={N}", eA, 1e-40)
-    cs = c_sig(s, h)
-    e1 = max(abs(sum(C[:m + 1]) - (h**2 / 12 - (lam**(m + 1) * mm - lam**(N - m) * mp_) / (1 - lam))) for m in range(N))
-    e2 = max(abs(sum(C[b] * q**(-b) for b in range(m + 1)) - (cs - q**(-m) * (lam**(m + 1) * mm / (q - lam) - lam**(N - m) * mp_ / (1 - lam * q))))
-             for m in range(N))
-    chk(f"Corollary 1, partial sums (10.6)-(10.7), sigma={s}, N={N}", max(e1, e2), 1e-45)
-    chk(f"sum lam^k f(k) = 0 (proof of Theorem 2), sigma={s}", abs(mp.nsum(lambda k: lam**k * f(k), [1, mp.inf])), 1e-40)
-    chk(f"(10.2): H1=(1-e^-s)c_s, sigma={s}", abs(H1_def(s, N) - (1 - mp.e**(-s)) * cs), 1e-40)
-
-# Corollary 1, asymptotics of C_{0,1}: (C0 - h^2/12 + s(3-r3)h^3/720)/h^4 -> -s^2(r3-1)/1440
-r3 = mp.sqrt(3)
-for s in (mp.mpf(1), mp.mpf(2)):
-    vals = []
-    for N in (64, 128, 256):
-        h = mp.mpf(1) / N
-        C0v = simple(s, N)[0][0]
-        vals.append((C0v - h**2 / 12 + s * (3 - r3) * h**3 / 720) / h**4)
-    chk(f"(10.9) h^4 coefficient of C_01, sigma={s} (N=256 vs limit)", abs(vals[-1] + s**2 * (r3 - 1) / 1440) / (s**2 * (r3 - 1) / 1440), 0.01)
-
-# Proposition 2: fitted E-M exact for e^{+-s x}
-for s, N in [(1, 10), (2.5, 7)]:
-    s = mp.mpf(s); h = mp.mpf(1) / N; cs = c_sig(s, h)
-    Qe = lambda f, df: sum(C0(j, N) * f(h * j) for j in range(N + 1)) + cs * (df(0) - df(1))
-    err = max(abs((mp.e**(t * s) - 1) / (t * s) - Qe(lambda x: mp.e**(t * s * x), lambda x: t * s * mp.e**(t * s * x))) for t in (1, -1))
-    chk(f"Prop. 2(ii): fitted E-M exact for e^(+-sigma x), sigma={s}", err, 1e-40)
-
-# Theorem 6(i): lower bound; test function phi_* gives (l, phi_*) = -h^6/30240 for any C
-def Bt(n, t):
-    return mp.bernpoly(n, t - mp.floor(t))
-for s, N in [(1, 4), (3, 8), (-2, 6)]:
-    s = mp.mpf(s); h = mp.mpf(1) / N
-    C = direct(s, N)[0]
-    n2 = (sum(C[b] * C[g] * G2(h * (b - g), s) for b in range(N + 1) for g in range(N + 1))
-          - 2 * sum(C[b] * F1_def(b, s, N)[0] for b in range(N + 1))
-          - sum(C0(b, N) * C0(g, N) * G3(h * (b - g), s) for b in range(N + 1) for g in range(N + 1))
-          + 2 * sum(C0(b, N) * (Phi1(h * b, s) + Phi1(1 - h * b, s)) for b in range(N + 1)) - 2 * Phi2(1, s))
-    lb = h**6 / 30240 / (1 + s**2 * h**2 / 40)
-    chk(f"Theorem 6(i): ||l||^2 >= lower bound, sigma={s}, N={N}", 0 if n2 >= lb else 1, 0.5)
-    phi = lambda x: h**6 / 720 * Bt(6, x / h)
-    val = mp.quad(phi, [h * k for k in range(N + 1)]) - sum(C0(b, N) * phi(h * b) for b in range(N + 1))
-    chk(f"Theorem 6(i): (l, phi_*) = -h^6/30240, sigma={s}, N={N}", abs(val + h**6 / 30240) / (h**6 / 30240), 1e-25)
-    nphi = mp.quad(lambda x: (h**3 / 6 * Bt(3, x / h) + s * h**4 / 24 * Bt(4, x / h))**2, [h * k for k in range(N + 1)])
-    chk(f"Theorem 6(i): ||phi_*||^2 formula, sigma={s}, N={N}", abs(nphi - h**6 / 30240 * (1 + s**2 * h**2 / 40)) / nphi, 1e-25)
-
-# Theorem 7: (R - h^4 term - h^5 term)/h^6 stays bounded (ratio of consecutive values ~ 1)
-f_, df_, d2_, d3_ = (lambda x: mp.log(1 + x)), (lambda x: 1 / (1 + x)), (lambda x: -1 / (1 + x)**2), (lambda x: 2 / (1 + x)**3)
-I_ = 2 * mp.log(2) - 1
-s = mp.mpf(1)
-L_ = lambda x: d3_(x) + s * d2_(x)
-res = []
-for N in (16, 32, 64, 128):
-    h = mp.mpf(1) / N
-    C = simple(s, N)[0]
-    R = I_ - sum(C0(j, N) * f_(h * j) for j in range(N + 1)) - sum(C[j] * df_(h * j) for j in range(N + 1))
-    res.append((R - h**4 / 720 * (L_(1) - L_(0)) + s * h**5 / (1440 * r3) * (L_(0) + L_(1))) / h**6)
-chk("Theorem 7: remainder/h^6 bounded for ln(1+x), sigma=1 (N=64 vs 128)", abs(res[-1] - res[-2]) / abs(res[-1]), 0.05)
+# closed formulas outside the convergence range |lambda1| e^{sigma h} < 1 (analytic continuation, Theorem 3)
+for s, N in [(2, 1), (10, 3), (50, 5)]:
+    p = par(mp.mpf(s), N)
+    Cd = direct(mp.mpf(s), N)[0]
+    Ct = theorem(p)[0]
+    chk(f"sigma={s}, N={N}: |lam|e^(sh)={mp.nstr(abs(p['lam']) * p['q'], 4)} > 1, Theorem 3 vs direct (relative)", rel(Ct, Cd), 1e-15)
 
 print("\nALL OK" if all(report) else f"\n{report.count(False)} FAILED")
+sys.exit(0 if all(report) else 1)

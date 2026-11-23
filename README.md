@@ -1,49 +1,51 @@
-# Optimal quadrature formula with derivative in $W_2^{(3,2)}(0,1)$ — numerical experiments
+# Optimal quadrature formula with derivative in $W_2^{(3,2)}(0,1)$: code and data
 
-Reproducible code for the paper
+This repository contains the code and data for the paper
 
-> A. R. Hayotov, S. Z. Polvonov, *An optimal quadrature formula with derivative exact for exponential functions in the Hilbert space $W_2^{(3,2)}$* (2026, submitted).
+> A. R. Hayotov, S. Z. Polvonov, *An exponentially fitted optimal quadrature formula with first derivative in the space $W_2^{(3,2)}(0,1)$*, submitted to *Calcolo* (2026).
 
-The paper studies the formula
+The paper studies the quadrature formula
 
 $$\int_0^1 \varphi(x)\,dx \cong \sum_{\beta=0}^{N} C_{\beta,0}\,\varphi(h\beta) + \sum_{\beta=0}^{N} C_{\beta,1}\,\varphi'(h\beta), \qquad h = 1/N,$$
 
-in the Hilbert space with the norm $\|\varphi\|^2=\int_0^1(\varphi'''+\sigma\varphi'')^2dx$. The weights $C_{\beta,0}$ are those of the trapezoidal rule; the derivative weights $C_{\beta,1}$ are optimal in the sense of Sard and are given in closed form.
+in the Hilbert space with the norm $\|\varphi\|^2=\int_0^1(\varphi'''+\sigma\varphi'')^2\,dx$, $\sigma\neq0$.
+The weights $C_{\beta,0}$ are those of the trapezoidal rule. The derivative weights $C_{\beta,1}$ are optimal in the sense of Sard and are given in closed form (Theorem 3 of the paper).
 
-## Online calculator
-
-**https://sarvarbek-zafar.github.io/w32-optimal-quadrature/**
-
-A web page for non-specialists (in Uzbek): type any integrand f(x), see it typeset as a formula,
-and get the exact integral, the errors of the trapezoidal, Simpson, Euler–Maclaurin, fitted
-Euler–Maclaurin and optimal rules for N = 4, 8, …, convergence orders, four plots and a plain-language
-conclusion (which rule wins and why, and whether the optimal formula suits this integrand).
-
-The page lives in `docs/` (`index.html`, `kvadratura.js` with the formulas of Theorem 4, `app.js`
-with the interface) and runs entirely in the browser in double precision; errors below about
-1e-14 are shown as ≈ 0. For 40-digit results use `code/taqqoslash.py`. The JavaScript coefficients
-agree with the Python implementation to about 2e-15.
-
-## Contents
-
-| Path | Contents |
-|---|---|
-| `code/kvadratura.py` | Closed-form optimal coefficients (Theorems 3 and 4), the fitted Euler–Maclaurin rule, classical rules, test functions |
-| `code/sigma_tahlil.py` | Direct solution of the linear system (5.1)–(5.3), norm of the error functional |
-| `code/paper_numerics.py` | Regenerates every table (`tables/*.tex`, Tables 1–8) and figure (`figures/*.pdf`, Figures 1–4) of the paper, about 15 s |
-| `code/verify_paper.py` | Independent high-precision check (40–60 digits) of every formula of the paper against the direct solution of the system, about 40 s |
-| `code/taqqoslash.py` | Compares the optimal formula with the trapezoidal, Simpson, Euler–Maclaurin and fitted Euler–Maclaurin rules (optionally Gauss–Legendre) on **any integrand you type in**: errors, observed orders, check of Theorem 7, CSV table, plots and an automatic conclusion |
-| `tables/`, `figures/` | Output of `paper_numerics.py`, as used in the paper |
-| `docs/` | Online calculator (GitHub Pages): `index.html`, `kvadratura.js`, `app.js` |
-
-## Usage
+## Reproducing the results of the paper
 
 ```bash
 pip install -r requirements.txt
 cd code
-python paper_numerics.py     # writes ../tables/*.tex and ../figures/*.pdf
-python verify_paper.py       # prints OK/FAIL for each formula; ends with "ALL OK"
+python paper_numerics.py     # writes ../tables/*.tex and ../figures/*.pdf (about 20 s)
+python verify_paper.py       # independent check of the formulas; ends with "ALL OK" (about 20 s)
 ```
+
+Both scripts use `mpmath` with at least 40 significant digits, so the results do not depend on the platform.
+The files in `tables/` and `figures/` are exactly the files produced by `paper_numerics.py` and used in the paper.
+
+| Output | Used in the paper |
+|---|---|
+| `tables/tab_coeff.tex` | Table 1: optimal coefficients for $\sigma=1$, $N=10$ and their deviation from the direct solution |
+| `tables/tab_norm.tex` | Table 2: norm of the error functional, observed order, comparison with the Euler–Maclaurin-type formula |
+| `tables/tab_leading.tex` | Table 3: check of the leading error term (Conjecture 2) |
+| `tables/tab_sigmaR.tex` | Table 4: the parameter $\sigma_R(N)$ and observed orders |
+| `tables/tab_classic.tex` | Table 5: comparison with the Simpson, two-point Gauss, Euler–Maclaurin and Boole rules |
+| `tables/tab_exact.tex` | Data for Section 11.2 (exactness for $1$, $x$, $e^{-\sigma x}$) |
+| `figures/fig_coeff.pdf` | Figure 1: optimal coefficients |
+| `figures/fig_leading.pdf` | Figure 2: leading error term as a function of $\sigma$ |
+| `figures/fig_conv.pdf` | Figure 3: convergence for integrands of non-exponential type |
+| `figures/fig_tau.pdf` | Additional figure: error for $e^{-\tau x}$ with fixed $\sigma$ (not used in the paper) |
+
+## Code
+
+| File | Contents |
+|---|---|
+| `code/kvadratura.py` | Optimal coefficients (Theorem 3), the classical rules (trapezoidal, Simpson, two-point Gauss, Euler–Maclaurin, Boole), the parameter $\sigma_R(N)$ of Section 11.4, test functions |
+| `code/sigma_tahlil.py` | Direct solution of the linear system (5.1)–(5.3) and the norm of the error functional (Lemma 1) |
+| `code/paper_numerics.py` | Generates all tables and figures of the paper |
+| `code/verify_paper.py` | Implements the formulas of the paper independently and compares them with the direct solution of the system for several values of $\sigma$ and $N$ |
+| `code/taqqoslash.py` | Companion tool: compares the optimal formula with classical rules on any integrand you type in |
+| `docs/` | Companion tool: online calculator (GitHub Pages) |
 
 Quick start in Python:
 
@@ -52,40 +54,31 @@ import mpmath as mp
 import kvadratura as K
 
 sigma, N = 1, 16
-C1 = K.C1_sodda(sigma, N)        # optimal derivative weights C_{beta,1}, Theorem 4
-F  = K.Funksiya("log(1+x)")      # integrand with exact integral and sigma*
-print(mp.nstr(F["I"] - K.optimal(F, N, F["sigma_nazariy"]), 5))   # error with sigma = sigma*
+C1 = K.C1(sigma, N)                     # optimal derivative weights C_{beta,1} (Theorem 3)
+F  = K.Funksiya("log(1+x)")             # integrand, its derivative and the exact integral
+s  = K.sigma_runge(F, N)                # sigma_R(N), Section 11.4
+print(mp.nstr(F["I"] - K.optimal(F, N, s), 5))   # error of the optimal formula
 ```
 
-### Your own integrand
+## Companion tools
 
-```bash
-cd code
-python taqqoslash.py "exp(-x)*cos(3*x)"                 # sigma = sigma* chosen automatically
-python taqqoslash.py "log(1+x)" --sigma 1 --N 4 8 16 32 64 128
-python taqqoslash.py "1/(1+25*x**2)" --oraliq -1 1 --gauss
-python taqqoslash.py                                    # asks for f(x)
-```
+These tools are not needed to reproduce the paper. Their interface is in Uzbek.
 
-The script prints a table of errors |R_N| with observed orders for every method, the
-parameters sigma* = -[f''']/[f''] and sigma_E^2 = [f''']/[f'], and a check of Theorem 7
-(720 N^4 R_N -> [f''' + sigma f'']_0^1, or the h^5 term when sigma = sigma*). It ends with a **conclusion** (also saved as `xulosa.txt`): a ranking of the methods, which rule
-integrates f exactly (Theorem 5, Proposition 2), whether the observed orders match the theory
-(a drop signals insufficient smoothness), whether the optimal formula suits this integrand and,
-if not, why (no sigma*, too large sigma*, singular f''/f''' at an end point, no gain over
-Euler-Maclaurin), and why the winning method wins. It writes
-`natijalar/<function>/xatoliklar.csv` and a four-panel figure `taqqoslash.png` / `.pdf`:
-the integrand and its derivative, convergence of all methods, the error as a function of
-sigma, and the optimal coefficients C_{beta,1}. Run `python taqqoslash.py -h` for all options.
-The integrand is parsed with sympy (`exp, log, sin, cos, sqrt, sinh, cosh, atan, erf, pi, ...`,
-powers with `**`); f and f' must be finite at the end points. On an interval [a, b] the
-substitution x = a + (b - a) t is used, and sigma refers to the variable t.
+* **Online calculator:** https://sarvarbek-zafar.github.io/w32-optimal-quadrature/ .
+  Type an integrand and get the errors of several rules, convergence orders and plots. It runs in the browser in double precision.
+* **`code/taqqoslash.py`:** the same comparison with 40-digit arithmetic, CSV output and plots, for example
+  `python taqqoslash.py "log(1+x)" --N 8 16 32 64`.
 
-All computations use `mpmath` with at least 40 significant digits; results do not depend on the platform.
+Both tools also contain a fitted Euler–Maclaurin rule and a simplified, equivalent form of the coefficient formulas. These are not part of the submitted paper.
+The state of the repository before it was aligned with the submitted paper is kept in the branch [`extended-version`](https://github.com/sarvarbek-zafar/w32-optimal-quadrature/tree/extended-version).
 
 ## Numbering
 
-Theorem, equation and table numbers in the code refer to the numbering of the manuscript (version 3, November 2026).
+Theorem, equation, table and section numbers in the code refer to the manuscript submitted to *Calcolo* (November 2026).
+
+## How to cite
+
+See `CITATION.cff`.
 
 ## License
 
